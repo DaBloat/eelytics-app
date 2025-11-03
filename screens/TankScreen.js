@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, ScrollView, ImageBackground, StyleSheet } from 'react-native';
+import { Text, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const styles = StyleSheet.create({
   container: {
@@ -9,10 +10,10 @@ const styles = StyleSheet.create({
 
 export default function TankScreen() {
   return (
-    <ImageBackground source={require('../assets/eels/background.png')} style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' , backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', paddingTop: 120 }}>
+      <SafeAreaView>
         <Text>Screen 3!</Text>
-      </ScrollView>
-    </ImageBackground>
+      </SafeAreaView>
+    </ScrollView>
   );
 }

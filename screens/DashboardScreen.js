@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, ScrollView, ImageBackground, StyleSheet, View } from 'react-native';
+import { Text, ScrollView, StyleSheet, View } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
 
 export default function DashboardScreen() {
   return (
-    <ImageBackground source={require('../assets/eels/background.png')} style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' , backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' }}>
+      <View style={{ alignItems: 'center', width: '100%' }}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Machine Control</Text>
         </View>
@@ -36,7 +36,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Summary of Today</Text>
         </View>
-      </ScrollView>
-    </ImageBackground>
+      </View>
+    </ScrollView>
   );
 }
