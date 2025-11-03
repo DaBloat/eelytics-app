@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Text, FlatList, StyleSheet, View, TouchableOpacity, Image, Switch, Modal, ScrollView } from 'react-native';
+import { Text, FlatList, StyleSheet, View, TouchableOpacity, Image, Switch, Modal, ScrollView, TextInput } from 'react-native';
 import { Button, Provider } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
   container: {
@@ -57,31 +58,83 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
+    width: '90%',
+    backgroundColor: '#1E2022',
     borderRadius: 10,
+    padding: 20,
     alignItems: 'center',
   },
-  modalImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    height: 40,
+    backgroundColor: '#333',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    color: 'white',
     marginBottom: 10,
   },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 5,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+  },
+  circleButton: {
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
+  },
+  closeButtonIcon: {
+    color: 'white',
+    fontSize: 24,
   },
   graphContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  eelImagePlaceholder: {
+    width: 250,
+    height: 180,
+    backgroundColor: '#555',
+    borderRadius: 10,
+    marginBottom: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eelImagePlaceholderText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  modalText: {
+    color: 'white',
+    fontSize: 17,
+    marginBottom: 8,
+  },
 });
 
 const generateEelData = (count) => {
   const data = [];
   const tanks = ['A', 'B', 'C'];
+  const groups = ['Table', 'Kuroko', 'Elver'];
   for (let i = 0; i < count; i++) {
     const size = Math.random() * 10;
     let group = '';
@@ -95,7 +148,7 @@ const generateEelData = (count) => {
     data.push({
       id: i.toString(),
       size: size.toFixed(2),
-      group,
+      group: groups[Math.floor(Math.random() * groups.length)],
       tank: tanks[Math.floor(Math.random() * tanks.length)],
       date: new Date(Date.now() - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 30)), // Random date in the last 30 days
     });
@@ -148,6 +201,8 @@ export default function AlertScreen() {
     </TouchableOpacity>
   );
 
+
+
   return (
     <Provider>
       <View style={styles.container}>
@@ -160,6 +215,7 @@ export default function AlertScreen() {
             />
             <Text style={styles.toggleLabel}>Graph</Text>
           </View>
+
         </View>
         {viewMode === 'list' ? (
           <FlatList
@@ -179,7 +235,7 @@ export default function AlertScreen() {
         )}
         {selectedItem && (
           <Modal
-            animationType="slide"
+            animationType="fade"
             transparent={true}
             visible={modalVisible}
             onRequestClose={() => {
@@ -188,14 +244,41 @@ export default function AlertScreen() {
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
-                <Text style={styles.modalText}>Eel ID: {selectedItem.id}</Text>
-                <Image source={{ uri: 'https://via.placeholder.com/200' }} style={styles.modalImage} />
-                <Text style={styles.modalText}>Date: {selectedItem.date.toLocaleDateString()}</Text>
-                <Button onPress={() => setModalVisible(false)}>Close</Button>
+                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <MaterialCommunityIcons name="close-circle" style={styles.closeButtonIcon} />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Eel Information</Text>
+                
+                <View style={styles.eelImagePlaceholder}>
+                  <Text style={styles.eelImagePlaceholderText}>Eel Image Placeholder</Text>
+                </View>
+
+                <Text style={styles.modalText}>{`Eel Size: ${selectedItem.size} inches`}</Text>
+                <Text style={styles.modalText}>{`Group Size: ${selectedItem.group}`}</Text>
+                <Text style={styles.modalText}>{`Tank: ${selectedItem.tank}`}</Text>
+                <Text style={styles.modalText}>{`Date: ${selectedItem.date.toLocaleDateString()}`}</Text>
+
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={styles.circleButton}>
+                    <MaterialCommunityIcons name="content-save" size={24} color="white" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.circleButton}>
+                    <MaterialCommunityIcons name="pencil" size={24} color="white" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.circleButton, styles.deleteButton]}>
+                    <MaterialCommunityIcons name="delete" size={24} color="white" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </Modal>
         )}
+
+
+
+
+
+
       </View>
     </Provider>
   );
