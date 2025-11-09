@@ -55,7 +55,7 @@ export default function MainNavigator() {
             borderTopColor: '#007AFF',
             borderTopWidth: 1,
             paddingBottom: insets.bottom,
-            height: 80 + insets.bottom,
+            height: 60 + insets.bottom,
           },
           tabBarItemStyle: {
             flexDirection: 'column',

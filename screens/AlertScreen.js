@@ -10,18 +10,10 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Align items to start and end
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 5,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  toggleLabel: {
-    color: 'white',
-    marginRight: 10,
+    paddingTop: 5,
   },
   item: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -31,6 +23,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)',
   },
   itemNumber: {
     color: 'white',
@@ -85,6 +79,18 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
   },
+  // Re-using the circle button style from the Feed screen for consistency
+  viewToggleButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    margin: 2, // Add a small margin around the button
+  },
   circleButton: {
     width: 65,
     height: 65,
@@ -105,6 +111,26 @@ const styles = StyleSheet.create({
   closeButtonIcon: {
     color: 'white',
     fontSize: 24,
+  },
+  paginationButtonContainer: {
+    flexDirection: 'row',
+    // No marginLeft needed if using space-between in header
+  },
+  paginationButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+    borderWidth: 0.5, // Make border slightly thinner for pagination buttons
+    borderColor: 'rgba(0, 122, 255, 0.8)',
+    marginLeft: 5, // Space between buttons
+    backgroundColor: 'transparent',
+  },
+  paginationButtonActive: {
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+  },
+  paginationButtonText: {
+    color: 'white',
+    fontSize: 12,
   },
   graphContainer: {
     flex: 1,
@@ -156,30 +182,24 @@ const generateEelData = (count) => {
   return data;
 };
 
-const allEelData = generateEelData(10000);
-const ITEMS_PER_PAGE = 20;
+const allEelData = generateEelData(10000); // Generate a large dataset
 
 export default function AlertScreen() {
   const [viewMode, setViewMode] = useState('list');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [page, setPage] = useState(1);
   const [displayedData, setDisplayedData] = useState([]);
+  const [displayLimit, setDisplayLimit] = useState(50); // Default to 50 items
 
+  // Effect to update the displayed data when the limit changes
   useEffect(() => {
-    const startingIndex = (page - 1) * ITEMS_PER_PAGE;
-    const newData = allEelData.slice(startingIndex, startingIndex + ITEMS_PER_PAGE);
-    if (page === 1) {
-      setDisplayedData(newData);
-    } else {
-      setDisplayedData((prevData) => [...prevData, ...newData]);
-    }
-  }, [page]);
+    // Slice the main data array to get the desired number of items
+    const newData = allEelData.slice(0, displayLimit);
+    setDisplayedData(newData);
+  }, [displayLimit]); // This effect runs whenever displayLimit changes
 
-  const handleLoadMore = () => {
-    if (displayedData.length < allEelData.length) {
-      setPage((prevPage) => prevPage + 1);
-    }
+  const handleChangeItemsPerPage = (newCount) => {
+    setDisplayLimit(newCount);
   };
 
   const renderItem = ({ item, index }) => (
@@ -207,15 +227,23 @@ export default function AlertScreen() {
     <Provider>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.toggleContainer}>
-            <Text style={styles.toggleLabel}>List</Text>
-            <Switch
-              value={viewMode === 'graph'}
-              onValueChange={(value) => setViewMode(value ? 'graph' : 'list')}
-            />
-            <Text style={styles.toggleLabel}>Graph</Text>
+          <TouchableOpacity
+            style={styles.viewToggleButton}
+            onPress={() => setViewMode(viewMode === 'list' ? 'graph' : 'list')}>
+            <MaterialCommunityIcons name={viewMode === 'list' ? 'chart-bar' : 'format-list-bulleted'} size={20} color="white" />
+          </TouchableOpacity>
+          {/* Pagination Controls */}
+          <View style={styles.paginationButtonContainer}>
+            {[50, 100, 200].map((count) => (
+              <TouchableOpacity
+                key={count}
+                style={[styles.paginationButton, displayLimit === count && styles.paginationButtonActive]}
+                onPress={() => handleChangeItemsPerPage(count)}
+              >
+                <Text style={styles.paginationButtonText}>{count}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-
         </View>
         {viewMode === 'list' ? (
           <FlatList
@@ -223,8 +251,6 @@ export default function AlertScreen() {
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={true}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
           />
         ) : (
           <ScrollView>

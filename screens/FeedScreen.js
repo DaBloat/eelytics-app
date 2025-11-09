@@ -1,87 +1,234 @@
-import React from 'react';
-// WebView is a new import
-import { View, Text, ScrollView, StyleSheet } from 'react-native'; 
-import { WebView } from 'react-native-webview'; // Replaced 'expo-av'
-
-// --- 1. UPDATE THIS with your PC's IP address ---
-const PC_STREAM_URL = 'http://192.168.0.200:8080/stream.mjpg';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { WebView } from 'react-native-webview'; // WebView is already imported
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 20,
+    alignItems: 'center', // Center the WebView horizontally
+  },
+  videoWrapper: {
+    // This wrapper will contain both the WebView and the button
+    position: 'relative',
   },
   video: {
-    width: '100%', // Take up the full width
-    height: 10, // You can adjust this as needed
+    backgroundColor: 'black',
+    width: '90%', // Adjust width to account for margin
+    aspectRatio: 16 / 9, // Enforce a 16:9 aspect ratio
+    borderRadius: 10, // Add rounded corners for a cleaner look
+    overflow: 'hidden', // Ensure content respects the border radius
+    // Add a uniform margin around the wrapper
+    borderWidth: 2, // Add a border
+    borderColor: 'rgba(0, 122, 255, 0.8)', // Use the app's blue color for the border
+  },
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+  },
+  modalDetailsContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)', 
+  },
+  modalDetailText: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  streamNameOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  streamNameText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
   },
   detailsContainer: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: 'column', // Stack the detail boxes vertically
+    alignItems: 'center', // Center the boxes horizontally
+    paddingTop: 20,
+    width: '100%',
   },
   detailSection: {
-    alignItems: 'center', // Center items horizontally
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)',
+    width: '90%', // Make the boxes wider to fit the vertical layout
+    marginBottom: 15, // Add space between the vertical boxes
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white', // White text for titles
+    color: 'white',
     marginBottom: 5,
   },
   sectionContent: {
     fontSize: 16,
-    color: 'white', // White text for content
+    color: 'white',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    position: 'absolute', // Position the button over the WebView
+    bottom: 10, // Add some padding from the bottom of the video
+    right: 10, // Add some padding from the right of the video
+    zIndex: 1,
+  },
+  circleButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
 });
 
+const STREAMS = {
+  processed: 'http://192.168.1.220:8889/processed/',
+  cam: 'http://192.168.1.220:8889/cam/',
+};
+
+// This script will run inside the WebView to hide controls and ensure autoplay
+const injectedJavaScript = `
+  function hideVideoControls() {
+    const video = document.querySelector("video");
+    if (video) {
+      video.controls = false; // Hides the controls
+      video.autoplay = true; // Ensure autoplay is set
+      video.muted = true; // Mute is often required for autoplay
+      video.playsInline = true; // For iOS inline playback
+      video.style.objectFit = "cover"; // Ensures video fills the container
+      video.play().catch(error => {
+        // Autoplay might be blocked, but controls should still be hidden
+        console.log("Autoplay prevented:", error);
+      });
+    }
+  }
+
+  // Run immediately and then repeatedly for a short period to catch dynamic loading
+  hideVideoControls();
+  const intervalId = setInterval(hideVideoControls, 500); // Check every 500ms
+  // Stop checking after a few seconds to save resources
+  setTimeout(() => clearInterval(intervalId), 5000); // Stop after 5 seconds
+  // The 'true' at the end is required for the script to run correctly on iOS.
+  true; 
+`;
+
 export default function FeedScreen() {
-  // This HTML code will be loaded into the WebView to display the stream
-  const htmlContent = `
-    <html>
-      <head>
-        <style>
-          body { margin: 0; background-color: #000; }
-          img { 
-            display: block; 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-          }
-        </style>
-      </head>
-      <body>
-        <img src="${PC_STREAM_URL}" />
-      </body>
-    </html
-  `;
+  const [currentStream, setCurrentStream] = useState(STREAMS.processed);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [streamNameToDisplay, setStreamNameToDisplay] = useState(null);
+  
+  const handleToggleStream = () => {
+    // Determine which stream we are switching TO
+    const nextStreamName = currentStream === STREAMS.processed ? '/cam' : '/processed';
+    const nextStreamUrl = currentStream === STREAMS.processed ? STREAMS.cam : STREAMS.processed;
+
+    // Show the name of the next stream
+    setStreamNameToDisplay(nextStreamName);
+
+    // Switch the stream
+    setCurrentStream(nextStreamUrl);
+
+    // Hide the text overlay after 2 seconds
+    setTimeout(() => setStreamNameToDisplay(null), 2000);
+  };
+
+  const enterFullScreen = async () => {
+    setIsFullScreen(true);
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+  };
+
+  const exitFullScreen = async () => {
+    setIsFullScreen(false);
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent' }}>
-      
-      {/* --- THIS IS THE REPLACEMENT FOR THE <Video> COMPONENT --- */}
-      <WebView
-        originWhitelist={['*']}
-        source={{ html: htmlContent }}
-        style={styles.video}
-        scrollEnabled={false}
-        bounces={false}
-      />
-      {/* --- END OF REPLACEMENT --- */}
+    <View style={styles.container}>
+      <TouchableOpacity onPress={enterFullScreen}>
+        <View style={[styles.video, styles.videoWrapper]}>
+          <WebView
+            key={currentStream}
+            source={{ uri: currentStream }}
+            style={{ flex: 1 }}
+            scrollEnabled={false}
+            mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
+            allowsInlineMediaPlayback={true} // Allow inline playback on iOS
+            injectedJavaScript={injectedJavaScript}
+          />
+          {streamNameToDisplay && (
+            <View style={styles.streamNameOverlay}>
+              <Text style={styles.streamNameText}>{streamNameToDisplay}</Text>
+            </View>
+          )}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.circleButton} onPress={handleToggleStream}>
+              <MaterialCommunityIcons name="camera-switch" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.detailsContainer}>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Size</Text>
-          <Text style={styles.sectionContent}>Medium</Text>
+          <Text style={styles.sectionContent}>-</Text>
         </View>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Group Size</Text>
-          <Text style={styles.sectionContent}>100</Text>
+          <Text style={styles.sectionContent}>-</Text>
         </View>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Tank</Text>
-          <Text style={styles.sectionContent}>Tank A</Text>
+          <Text style={styles.sectionContent}>-</Text>
         </View>
       </View>
-    </ScrollView>
+
+      <Modal visible={isFullScreen} supportedOrientations={['landscape']}>
+        <View style={styles.fullScreenContainer}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={exitFullScreen}>
+            <WebView
+              key={`fullscreen-${currentStream}`} // Use a different key for the fullscreen WebView
+              source={{ uri: currentStream }}
+              style={{ flex: 1 }}
+              scrollEnabled={false}
+              mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
+              allowsInlineMediaPlayback={true} // Allow inline playback on iOS
+              injectedJavaScript={injectedJavaScript}
+            />
+            <View style={styles.modalDetailsContainer}>
+              <Text style={styles.modalDetailText}>Size: -</Text>
+              <Text style={styles.modalDetailText}>Group Size: -</Text>
+              <Text style={styles.modalDetailText}>Tank: -</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
   );
 }
