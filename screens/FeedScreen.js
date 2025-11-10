@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
 import { WebView } from 'react-native-webview'; // WebView is already imported
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+
+const logo = require('../assets/eels/logo.png');
 
 const styles = StyleSheet.create({
   container: {
@@ -142,7 +144,9 @@ export default function FeedScreen() {
   const [currentStream, setCurrentStream] = useState(STREAMS.processed);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [streamNameToDisplay, setStreamNameToDisplay] = useState(null);
-  
+  const [feedError, setFeedError] = useState(false);
+  const [fullscreenFeedError, setFullscreenFeedError] = useState(false);
+
   const handleToggleStream = () => {
     // Determine which stream we are switching TO
     const nextStreamName = currentStream === STREAMS.processed ? '/cam' : '/processed';
@@ -172,15 +176,21 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <TouchableOpacity onPress={enterFullScreen}>
         <View style={[styles.video, styles.videoWrapper]}>
-          <WebView
-            key={currentStream}
-            source={{ uri: currentStream }}
-            style={{ flex: 1 }}
-            scrollEnabled={false}
-            mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
-            allowsInlineMediaPlayback={true} // Allow inline playback on iOS
-            injectedJavaScript={injectedJavaScript}
-          />
+          {feedError ? (
+              <Image source={logo} style={{ width: 75, height: '100%', alignSelf: 'center', resizeMode: 'contain' }} />
+          ) : (
+            <WebView
+              key={currentStream}
+              source={{ uri: currentStream }}
+              style={{ flex: 1 }}
+              scrollEnabled={false}
+              mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
+              allowsInlineMediaPlayback={true} // Allow inline playback on iOS
+              injectedJavaScript={injectedJavaScript}
+              onError={() => setFeedError(true)}
+              onLoad={() => setFeedError(false)}
+            />
+          )}
           {streamNameToDisplay && (
             <View style={styles.streamNameOverlay}>
               <Text style={styles.streamNameText}>{streamNameToDisplay}</Text>
@@ -212,15 +222,21 @@ export default function FeedScreen() {
       <Modal visible={isFullScreen} supportedOrientations={['landscape']}>
         <View style={styles.fullScreenContainer}>
           <TouchableOpacity style={{ flex: 1 }} onPress={exitFullScreen}>
-            <WebView
-              key={`fullscreen-${currentStream}`} // Use a different key for the fullscreen WebView
-              source={{ uri: currentStream }}
-              style={{ flex: 1 }}
-              scrollEnabled={false}
-              mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
-              allowsInlineMediaPlayback={true} // Allow inline playback on iOS
-              injectedJavaScript={injectedJavaScript}
-            />
+            {fullscreenFeedError ? (
+              <Image source={logo} style={{ width: 75, height: '100%', alignSelf: 'center', resizeMode: 'contain' }} />
+            ) : (
+              <WebView
+                key={`fullscreen-${currentStream}`} // Use a different key for the fullscreen WebView
+                source={{ uri: currentStream }}
+                style={{ flex: 1 }}
+                scrollEnabled={false}
+                mediaPlaybackRequiresUserAction={false} // Allow autoplay without user interaction
+                allowsInlineMediaPlayback={true} // Allow inline playback on iOS
+                injectedJavaScript={injectedJavaScript}
+                onError={() => setFullscreenFeedError(true)}
+                onLoad={() => setFullscreenFeedError(false)}
+              />
+            )}
             <View style={styles.modalDetailsContainer}>
               <Text style={styles.modalDetailText}>Size: -</Text>
               <Text style={styles.modalDetailText}>Group Size: -</Text>
