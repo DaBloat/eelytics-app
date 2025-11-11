@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, ScrollView, StyleSheet, View, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
+import Tank from '../components/Tank'; // Import the new Tank component
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
@@ -83,6 +84,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)',
   },
   modalTankVisualContainer: {
     height: 300, // Taller for modal view
@@ -173,6 +176,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  // Styles for bottom action buttons (matching FeedScreen)
+  actionSection: {
+    alignItems: 'center',
+    width: '90%',
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
+  actionButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 150, // Adjusted for longer text
+  },
 });
 
 // Define the total height of the tanks in centimeters.
@@ -254,6 +277,43 @@ export default function TankScreen() {
     loadTankData();
   }, []); // The empty dependency array ensures this runs only once on mount.
 
+  // This useEffect simulates live data coming from sensors.
+  // In a real application, you would replace this with your WebSocket listener or polling logic.
+  useEffect(() => {
+    const sensorInterval = setInterval(() => {
+      setTanks(currentTanks => {
+        // If there are no tanks, do nothing.
+        if (currentTanks.length === 0) {
+          return [];
+        }
+        // Map over the current tanks to produce a new state.
+        return currentTanks.map(tank => {
+          // In HOUSING mode, the system tries to maintain the water level.
+          if (tank.mode === 'HOUSING') {
+            // Calculate the difference from the target level.
+            const difference = tank.maintainedLevelCm - tank.level;
+            
+            // Create a small correction force pulling the level towards the target.
+            const correction = difference * 0.1;
+
+            // Add a smaller random fluctuation to simulate natural variations.
+            const fluctuation = (Math.random() - 0.5) * 0.4;
+
+            let newLevel = tank.level + correction + fluctuation;
+
+            // Ensure the new level stays within the tank's physical bounds (0 to 15 cm).
+            newLevel = Math.max(0, Math.min(newLevel, TOTAL_TANK_HEIGHT_CM));
+            return { ...tank, level: parseFloat(newLevel.toFixed(1)) };
+          }
+          // In MAINTENANCE mode, the level does not change.
+          return tank;
+        });
+      });
+    }, 3000); // Update every 3 seconds.
+
+    return () => clearInterval(sensorInterval); // Cleanup on unmount to prevent memory leaks.
+  }, []); // The empty dependency array ensures this effect runs only once.
+
   if (isLoading) {
     return <View style={[styles.container, { justifyContent: 'center' }]}><ActivityIndicator size="large" color="#007AFF" /></View>;
   }
@@ -318,41 +378,46 @@ export default function TankScreen() {
     console.log(`Adding water to ${selectedTank.name}`);
   };
 
+  // Placeholder function for flushing all tanks
+  const handleFlushAll = () => {
+    console.log('Flushing all tanks...');
+    const updatedTanks = tanks.map(tank => ({
+      ...tank,
+      level: 0,
+      mode: 'MAINTENANCE',
+    }));
+    setTanks(updatedTanks);
+  };
+
+  // Placeholder function for changing mode for all tanks
+  const handleChangeModeAll = () => {
+    console.log('Changing mode for all tanks to HOUSING...');
+    const updatedTanks = tanks.map(tank => ({
+      ...tank,
+      mode: 'HOUSING',
+    }));
+    setTanks(updatedTanks);
+  };
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        {tanks.map((tank, index) => {
-          const waterLevelPercentage = (tank.level / TOTAL_TANK_HEIGHT_CM) * 100;
-          let tankBorderColor = 'green';
-          if (
-            tank.level >= TOTAL_TANK_HEIGHT_CM ||
-            tank.level <= MINIMUM_THRESHOLD_CM ||
-            tank.level !== tank.maintainedLevelCm
-          ) {
-            tankBorderColor = 'red';
-          }
+        {tanks.map((tank) => (
+          <Tank key={tank.name} tank={tank} onOpenModal={handleOpenModal} styles={styles} />
+        ))}
 
-          return (
-            <TouchableOpacity key={index} style={styles.section} onPress={() => handleOpenModal(tank)}>
-              <View style={[styles.tankVisualContainer, { borderColor: tankBorderColor }]}>
-                <View style={[styles.waterLevel, { height: `${waterLevelPercentage}%` }]} />
-                <Text style={styles.waterLevelText}>{`${tank.level} cm`}</Text>
-              </View>
-              <View style={styles.titleContainer}>
-                <Text style={styles.sectionTitle}>{tank.name}</Text>
-                <Text style={styles.tankDetailsText}>{tank.description}</Text>
-                <Text style={styles.tankDetailsText}>{`Accepts: ${tank.acceptedGroups.join(', ')}`}</Text>
-                <Text style={styles.tankDetailsText}>{`Maintain: ${tank.maintainedLevelCm} cm`}</Text>
-                <Text style={styles.tankDetailsText}>
-                  Population: {tank.population}
-                </Text>
-                <Text style={styles.tankDetailsText}>
-                  MODE: <Text style={[styles.maintainModeText, { color: tank.mode === 'HOUSING' ? 'green' : 'red' }]}>{tank.mode}</Text>
-                </Text>
-              </View>
+        <View style={styles.actionSection}>
+          <View style={styles.actionButtonContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#E59400' }]}
+              onPress={handleFlushAll}
+            >
+              <Text style={styles.modalButtonText}>Flush All</Text>
             </TouchableOpacity>
-          );
-        })}
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#007AFF' }]} onPress={handleChangeModeAll}>
+              <Text style={styles.modalButtonText}>Change Mode All</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       {selectedTank && (

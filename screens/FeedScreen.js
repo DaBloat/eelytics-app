@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview'; // WebView is already imported
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -9,7 +9,7 @@ const logo = require('../assets/eels/logo.png');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 10,
     alignItems: 'center', // Center the WebView horizontally
   },
   videoWrapper: {
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.8)', 
+    borderColor: 'rgba(0, 122, 255, 0.8)',
   },
   modalDetailText: {
     color: 'white',
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   detailsContainer: {
     flexDirection: 'column', // Stack the detail boxes vertically
     alignItems: 'center', // Center the boxes horizontally
-    paddingTop: 20,
+    paddingTop: 10,
     width: '100%',
   },
   detailSection: {
@@ -106,6 +106,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  actionSection: {
+    alignItems: 'center',
+    width: '90%',
+    marginBottom: 15,
+    marginTop: 5,
+  },
+  // New styles for the action section
+  actionButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 15,
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 120,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  dateTimeContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingTop: 10,
+    width: '100%',
+    color: "white"
+  },
+  dateTimeText: {
+    color: 'gray',
+    fontSize: 12,
   },
 });
 
@@ -146,6 +185,17 @@ export default function FeedScreen() {
   const [streamNameToDisplay, setStreamNameToDisplay] = useState(null);
   const [feedError, setFeedError] = useState(false);
   const [fullscreenFeedError, setFullscreenFeedError] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000); // Update every second
+
+    return () => {
+      clearInterval(timer); // Cleanup on component unmount
+    };
+  }, []); // Run only once on mount
 
   const handleToggleStream = () => {
     // Determine which stream we are switching TO
@@ -173,7 +223,7 @@ export default function FeedScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={enterFullScreen}>
         <View style={[styles.video, styles.videoWrapper]}>
           {feedError ? (
@@ -217,6 +267,25 @@ export default function FeedScreen() {
           <Text style={styles.sectionTitle}>Tank</Text>
           <Text style={styles.sectionContent}>-</Text>
         </View>
+        <View style={styles.actionSection}>
+          <View style={styles.actionButtonContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+              onPress={() => console.log('Start Pressed')}
+            >
+              <Text style={styles.actionButtonText}>Start</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#F44336' }]}
+              onPress={() => console.log('End Pressed')}
+            >
+              <Text style={styles.actionButtonText}>End</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.dateTimeContainer}>
+            <Text style={styles.dateTimeText}>{currentDateTime.toLocaleDateString()} - {currentDateTime.toLocaleTimeString()}</Text>
+          </View>
+        </View>
       </View>
 
       <Modal visible={isFullScreen} supportedOrientations={['landscape']}>
@@ -245,6 +314,6 @@ export default function FeedScreen() {
           </TouchableOpacity>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }

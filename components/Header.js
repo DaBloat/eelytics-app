@@ -5,7 +5,7 @@ import Modal from 'react-native-modal';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const Header = ({ title }) => {
+const Header = ({ title, headerRight }) => {
   const navigation = useNavigation();
   const [isModalVisible, setModalVisible] = useState(false);
   const toggleModal = () => {
@@ -19,9 +19,12 @@ const Header = ({ title }) => {
         <Image source={require('../assets/eels/logo.png')} style={styles.logo} />
         <Text style={styles.title}>{title}</Text>
       </View>
-      <TouchableOpacity onPress={toggleModal}>
-        <Image source={require('../assets/user/KURT.png')} style={styles.profilePhoto} />
-      </TouchableOpacity>
+      <View style={styles.rightContainer}>
+        {headerRight && headerRight()}
+        <TouchableOpacity onPress={toggleModal}>
+          <Image source={require('../assets/user/KURT.png')} style={styles.profilePhoto} />
+        </TouchableOpacity>
+      </View>
 
       <Modal
         isVisible={isModalVisible}
@@ -69,6 +72,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   leftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },

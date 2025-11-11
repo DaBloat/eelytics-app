@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     backgroundColor: 'gray',
-    borderRadius: 25,
+    borderRadius: 5,
     marginLeft: 10,
   },
   modalContainer: {
@@ -57,6 +57,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)',
   },
   modalTitle: {
     fontSize: 22,

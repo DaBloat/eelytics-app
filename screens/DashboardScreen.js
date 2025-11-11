@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Text, ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Text, ScrollView, StyleSheet, View, TouchableOpacity, Modal } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
@@ -10,8 +11,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     marginBottom: 20,
-    paddingHorizontal: 16, // Add horizontal padding to align with sections
+  },
+  batchButton: {
+    backgroundColor: 'rgba(0, 122, 255, 0.8)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    flexDirection: 'row',
+  },
+  batchButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   section: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -46,23 +64,6 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: 'bold',
     marginBottom: 8,
-  },
-  batchButton: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 122, 255, 0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 15,
-  },
-  batchButtonText: {
-    color: 'white',
-    fontSize: 12,
-    marginLeft: 5,
-    fontWeight: '600',
   },
   populationContainer: {
     flexDirection: 'row',
@@ -149,17 +150,86 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 5,
   },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#1E2022',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.8)',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 15,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  modalCloseIcon: {
+    fontSize: 30,
+    color: 'white',
+  },
+  calendarPlaceholder: {
+    height: 300,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarPlaceholderText: {
+    color: 'gray',
+    fontSize: 18,
+  },
+  batchButtonIcon: {
+    color: 'white',
+    marginRight: 5,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 20,
+  },
+  modalActionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });
 
 export default function DashboardScreen({ navigation }) {
   const [greeting, setGreeting] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('All');
   const [selectedHistogramGroup, setSelectedHistogramGroup] = useState('Elver');
+  const [isBatchModalVisible, setBatchModalVisible] = useState(false);
+  const [batchDate, setBatchDate] = useState('All');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const histogramGroups = ['Elver', 'Kuroko', 'Table'];
+  const today = new Date().toISOString().split('T')[0];
 
   // Placeholder function for when the batch button is pressed
-  const handleBatchSelect = () => console.log('Batch selection modal should open.');
   const userName = 'Kurt'; // User's first name
 
   useEffect(() => {
@@ -184,6 +254,12 @@ export default function DashboardScreen({ navigation }) {
     setSelectedHistogramGroup(histogramGroups[nextIndex]);
   };
 
+  const handleSaveDate = () => {
+    setBatchDate(selectedDate);
+    setBatchModalVisible(false);
+  };
+
+
   const histogramData = {
     Elver: [
       { range: '2"', count: 600 },
@@ -207,12 +283,14 @@ export default function DashboardScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent' }}>
       <View style={{ width: '100%', paddingTop: 20 }}>
-        <Text style={styles.greetingText}>{greeting}</Text>
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.batchButton} onPress={handleBatchSelect}>
-            <MaterialCommunityIcons name="layers-outline" size={14} color="white" />
-            <Text style={styles.batchButtonText}>Batch: {selectedBatch}</Text>
+        <View style={styles.header}>
+          <Text style={styles.greetingText}>{greeting}</Text>
+          <TouchableOpacity style={styles.batchButton} onPress={() => setBatchModalVisible(true)}>
+            <MaterialCommunityIcons name="calendar-month" size={14} style={styles.batchButtonIcon} />
+            <Text style={styles.batchButtonText}>{batchDate === 'All' ? 'All Batches' : `${batchDate}`}</Text>
           </TouchableOpacity>
+        </View>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Average Size (inch)</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
@@ -296,6 +374,68 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isBatchModalVisible}
+        onRequestClose={() => setBatchModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setBatchModalVisible(false)}>
+              <MaterialCommunityIcons name="close-circle" style={styles.modalCloseIcon} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Select Batch Date</Text>
+            <Calendar
+              current={today}
+              style={{ width: 320, height: 350 }} // Set a fixed width and height for consistency
+              hideExtraDays={false} // Explicitly set to false to ensure 6 weeks are always rendered
+              onDayPress={(day) => {
+                setSelectedDate(day.dateString);
+              }}
+              markedDates={{
+                [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: 'rgba(0, 122, 255, 0.8)' },
+                [today]: { marked: true, dotColor: '#58B1FF' }
+              }}
+              theme={{
+                backgroundColor: '#1E2022',
+                calendarBackground: '#1E2022',
+                textSectionTitleColor: '#b6c1cd',
+                selectedDayBackgroundColor: 'rgba(0, 122, 255, 0.8)',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#58B1FF',
+                dayTextColor: '#d9e1e8',
+                textDisabledColor: '#444',
+                dotColor: '#00adf5',
+                selectedDotColor: '#ffffff',
+                arrowColor: 'white',
+                disabledArrowColor: '#444',
+                monthTextColor: 'white',
+                indicatorColor: 'blue',
+                textDayFontWeight: '300',
+                textMonthFontWeight: 'bold',
+                textDayHeaderFontWeight: '300',
+                textDayFontSize: 16,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 14,
+                'stylesheet.calendar.header': {
+                  week: { marginTop: 5, flexDirection: 'row', justifyContent: 'space-between' }
+                }
+              }}
+            />
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalActionButton, { backgroundColor: '#007AFF' }]}
+                onPress={handleSaveDate}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }

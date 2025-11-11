@@ -1,8 +1,11 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { createStackNavigator } from '@react-navigation/stack';
 import MainNavigator from './navigators/MainNavigator';
+import LoginScreen from './screens/LoginScreen';
 
+const Stack = createStackNavigator();
 const background = require('./assets/eels/background.png');
 
 const MyTheme = {
@@ -20,9 +23,11 @@ export default function App() {
       <View style={{flex: 1}}>
         <Image source={background} style={styles.backgroundImage} />
         <NavigationContainer theme={MyTheme}>
-          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <MainNavigator />
-          </View>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            {/* MainNavigator is now nested inside the stack */}
+            <Stack.Screen name="MainApp" component={MainNavigator} />
+          </Stack.Navigator>
         </NavigationContainer>
       </View>
     </SafeAreaProvider>
