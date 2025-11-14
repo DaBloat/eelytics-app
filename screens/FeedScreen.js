@@ -186,6 +186,9 @@ export default function FeedScreen() {
   const [feedError, setFeedError] = useState(false);
   const [fullscreenFeedError, setFullscreenFeedError] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [eelSize, setEelSize] = useState('-');
+  const [eelGroup, setEelGroup] = useState('-');
+  const [eelTank, setEelTank] = useState('-');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -194,6 +197,35 @@ export default function FeedScreen() {
 
     return () => {
       clearInterval(timer); // Cleanup on component unmount
+    };
+  }, []); // Run only once on mount
+
+  useEffect(() => {
+    const fetchEelData = async () => {
+      try {
+        const response = await fetch('http://192.168.1.220/api/latest_data');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Assuming the API returns an object with 'size' and 'group' properties
+        setEelSize(data.size || '-');
+        setEelGroup(data.group || '-');
+        setEelTank(data.tank || '-');
+      } catch (error) {
+        console.error("Could not fetch eel data:", error);
+        setEelSize('-');
+        setEelGroup('-');
+        setEelTank('-');
+      }
+    };
+
+    fetchEelData(); // Fetch immediately on mount
+
+    const intervalId = setInterval(fetchEelData, 3000); // Poll every 3 seconds
+
+    return () => {
+      clearInterval(intervalId); // Cleanup on component unmount
     };
   }, []); // Run only once on mount
 
@@ -257,15 +289,15 @@ export default function FeedScreen() {
       <View style={styles.detailsContainer}>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Size</Text>
-          <Text style={styles.sectionContent}>-</Text>
+          <Text style={styles.sectionContent}>{eelSize}</Text>
         </View>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Group Size</Text>
-          <Text style={styles.sectionContent}>-</Text>
+          <Text style={styles.sectionContent}>{eelGroup}</Text>
         </View>
         <View style={styles.detailSection}>
           <Text style={styles.sectionTitle}>Tank</Text>
-          <Text style={styles.sectionContent}>-</Text>
+          <Text style={styles.sectionContent}>{eelTank}</Text> 
         </View>
         <View style={styles.actionSection}>
           <View style={styles.actionButtonContainer}>
@@ -307,9 +339,9 @@ export default function FeedScreen() {
               />
             )}
             <View style={styles.modalDetailsContainer}>
-              <Text style={styles.modalDetailText}>Size: -</Text>
-              <Text style={styles.modalDetailText}>Group Size: -</Text>
-              <Text style={styles.modalDetailText}>Tank: -</Text>
+              <Text style={styles.modalDetailText}>Size: {eelSize}</Text>
+              <Text style={styles.modalDetailText}>Group Size: {eelGroup}</Text>
+              <Text style={styles.modalDetailText}>Tank: {eelTank}</Text>
             </View>
           </TouchableOpacity>
         </View>
